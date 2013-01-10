@@ -33,10 +33,11 @@ class ListIndex : public Index {
  public:
   ListIndex() {}
   virtual ~ListIndex() {}
-  virtual Status Open(const std::string& db_name,
+  virtual Status Open(const std::string& filename,
                       const DataManager* data_manager,
                       int num_buckets,
                       int num_entries);
+  virtual Status Close();
   virtual Status GetItem(const std::string& key,
                          offset_t* offset,
                          kvsize_t* size_value,
@@ -52,7 +53,7 @@ class ListIndex : public Index {
 
 
  private:
-  std::string db_name_;
+  std::string filename_;
   const DataManager* data_manager_;
 
   uint64_t size_header_;

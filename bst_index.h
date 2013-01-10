@@ -33,10 +33,11 @@ class BSTIndex : public Index {
  public:
   BSTIndex() {}
   virtual ~BSTIndex() {}
-  virtual Status Open(const std::string& db_name,
+  virtual Status Open(const std::string& filename,
                       const DataManager* data_manager,
                       int num_buckets,
                       int num_entries);
+  virtual Status Close();
   virtual Status GetItem(const std::string& key,
                          offset_t* offset,
                          kvsize_t* size_value,
@@ -52,7 +53,7 @@ class BSTIndex : public Index {
 
 
  private:
-  std::string db_name_;
+  std::string filename_;
   const DataManager* data_manager_;
 
   uint64_t size_header_;
@@ -63,7 +64,7 @@ class BSTIndex : public Index {
 
   Status FindItem(const std::string& key, index_t* index_out, index_t* index_parent_out);
   Status FindMinItem(index_t index, index_t* index_out, index_t* index_parent);
-  Status CreateFile(const std::string& filename, int num_buckets, int num_entries, int num_free_entries);
+  Status CreateFile(const std::string& filename, int num_buckets, int num_entries, int num_entries_free);
   Status OpenFile(const std::string& filename, num_t num_buckets, num_t num_entries);
   Status CloseFile();
   Status ExpandFile();
@@ -75,7 +76,7 @@ class BSTIndex : public Index {
   struct Header {
     num_t num_buckets;
     num_t num_entries;
-    num_t num_free_entries;
+    num_t num_entries_free;
     index_t index_free_entries_head;
     index_t index_free_entries_stack;
   };

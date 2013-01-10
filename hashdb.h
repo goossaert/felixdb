@@ -36,7 +36,7 @@ class HashMap {
   ~HashMap() {
     Close();
   }
-  Status Open(const std::string& db_name);
+  Status Open(const std::string& db_name, int num_buckets, int num_entries, bool overwrite);
   Status Close();
   Status Get(const std::string& key, std::string* value) const;
   Status Put(const std::string& key, const std::string& value);

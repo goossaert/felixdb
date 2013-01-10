@@ -33,6 +33,7 @@ class FBFileManager {
   FBFileManager() {}
   virtual ~FBFileManager() {}
   virtual Status Open(const std::string& filename) = 0;
+  virtual Status Close() = 0;
   virtual Status AddBlock(offset_t off, uint64_t size) = 0;
   virtual Status DeleteBlock(offset_t off) = 0;
   virtual Status UpdateBlock(offset_t off, offset_t off_new, uint64_t size) = 0;
@@ -51,6 +52,7 @@ class SimpleFBFileManager : public FBFileManager {
   std::vector<index_t> slots_free_;
 
   virtual Status Open(const std::string& filename);
+  virtual Status Close();
   virtual Status AddBlock(offset_t off, uint64_t size);
   virtual Status DeleteBlock(offset_t off);
   virtual Status UpdateBlock(offset_t off, offset_t off_new, uint64_t size);
@@ -58,6 +60,7 @@ class SimpleFBFileManager : public FBFileManager {
 
  private:
   std::string db_name_;
+  std::string filename_;
   int fd_freememory_; 
   
   Status CreateFile(const std::string& filename);

@@ -20,7 +20,8 @@
 namespace felixdb {
 
 Status FileDataManager::Open(const std::string& filename, uint64_t size_data) {
-  Status s = OpenFile("/tmp/felixdb/data", size_data);
+  filename_ = filename;
+  Status s = OpenFile(filename_.c_str(), size_data);
   if (!s.IsOK()) return s; 
   struct statfs stat;
   fstatfs(fd_data_, &stat);
@@ -28,6 +29,16 @@ Status FileDataManager::Open(const std::string& filename, uint64_t size_data) {
   //printf("Disk stats: %d %d %.0f | %.0f Mb\n", (int)stat.f_bsize, (int)stat.f_bfree, mul, mul / (1024 * 1024));
   return Status::OK();
 }
+
+
+Status FileDataManager::Close() {
+  if (close(fd_data_) < 0) {
+    std::string msg = std::string("Count not close data file [") + filename_ + std::string("]");
+    return Status::IOError(msg, strerror(errno));
+  }
+  return Status::OK();
+}
+
 
 Status FileDataManager::ReadData(offset_t offset, int size, std::string* data) const {
   //printf("FileDataManager::ReadData() %d %d\n", (int)offset, (int)size);
@@ -94,11 +105,7 @@ Status FileDataManager::CreateFile(const std::string& filename, uint64_t size_da
 
 Status FileDataManager::OpenFile(const std::string& filename, uint64_t size_data) {
   Status s;
-  if (access(filename.c_str(), F_OK) != -1) {
-    // do nothing
-    // printf("data file exists\n");
-  } else {
-    //printf("data file doesn't exist\n");
+  if (access(filename.c_str(), F_OK) == -1) {
     s = CreateFile(filename, size_data);
     if (!s.IsOK()) return s;
   }

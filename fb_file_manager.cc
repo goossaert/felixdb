@@ -98,8 +98,19 @@ Status SimpleFBFileManager::CreateFile(const std::string& filename) {
 
 
 Status SimpleFBFileManager::Open(const std::string& filename) {
+  filename_ = filename;
   return OpenFile(filename);
 }
+
+
+Status SimpleFBFileManager::Close() {
+  if (close(fd_freememory_) < 0) {
+    std::string msg = std::string("Count not close free memory file [") + db_name_ + std::string("]");
+    return Status::IOError(msg, strerror(errno));
+  }
+  return Status::OK();
+}
+
 
 Status SimpleFBFileManager::OpenFile(const std::string& filename) {
   if (access(filename.c_str(), F_OK) == -1) {

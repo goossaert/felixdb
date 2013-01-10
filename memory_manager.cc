@@ -19,14 +19,14 @@
 
 namespace felixdb {
 
-Status SimpleMemoryManager::Open(const std::string& db_name,
+Status SimpleMemoryManager::Open(const std::string& filename,
                                  DataManager* data_manager,
                                  kvsize_t size_data,
                                  offset_t offset_init) {
-  db_name_ = db_name;
+  filename_ = filename;
   data_manager_ = data_manager;
-  file_manager_ = new SimpleFBFileManager(db_name, size_data, offset_init);
-  Status s = file_manager_->Open("/tmp/felixdb/freememory");
+  file_manager_ = new SimpleFBFileManager(filename, size_data, offset_init);
+  Status s = file_manager_->Open(filename);
   if (!s.IsOK()) return s;
   std::map< offset_t, FreeMemoryBlockExtended >::const_iterator it;
   for (it = file_manager_->freememory_map_.begin(); it != file_manager_->freememory_map_.end(); ++it) {
@@ -37,6 +37,15 @@ Status SimpleMemoryManager::Open(const std::string& db_name,
 
   return Status::OK();
 }
+
+
+Status SimpleMemoryManager::Close() {
+  Status s = file_manager_->Close();
+  if (!s.IsOK()) return s;
+  return Status::OK();
+}
+
+
 
 
 Status SimpleMemoryManager::AllocateMemory(kvsize_t size,

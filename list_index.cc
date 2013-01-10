@@ -25,13 +25,23 @@ void ListIndex::PrintHeader(char*msg)
   fprintf(stdout, "Header ListIndex\n");
 }
 
-Status ListIndex::Open(const std::string& db_name, const DataManager* data_manager, int num_buckets, int num_entries) {
-  db_name_ = db_name;
+Status ListIndex::Open(const std::string& filename, const DataManager* data_manager, int num_buckets, int num_entries) {
+  filename_ = filename;
   data_manager_ = data_manager;
   Status s = OpenFile("/tmp/felixdb/index", num_buckets, num_entries);
   if(!s.IsOK()) return s;
   return Status::OK();
 }
+
+
+Status ListIndex::Close() {
+  if (close(fd_index_) < 0) {
+    std::string msg = std::string("Count not close index file [") + filename_ + std::string("]");
+    return Status::IOError(msg, strerror(errno));
+  }
+  return Status::OK();
+}
+
 
 
 int ListIndex::HashFunctionMul(const std::string& key) const {

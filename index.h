@@ -31,6 +31,7 @@ class Index {
                       const DataManager* data_manager,
                       int num_buckets,
                       int num_entries) = 0;
+  virtual Status Close() = 0;
   virtual Status GetItem(const std::string& key,
                          offset_t* offset,
                          kvsize_t* size_value,

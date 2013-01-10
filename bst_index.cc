@@ -19,13 +19,24 @@
 
 namespace felixdb {
 
-Status BSTIndex::Open(const std::string& db_name, const DataManager* data_manager, int num_buckets, int num_entries) {
-  db_name_ = db_name;
+Status BSTIndex::Open(const std::string& filename, const DataManager* data_manager, int num_buckets, int num_entries) {
+  filename_ = filename;
   data_manager_ = data_manager;
-  Status s = OpenFile("/tmp/felixdb/index", num_buckets, num_entries);
+  Status s = OpenFile(filename, num_buckets, num_entries);
   if(!s.IsOK()) return s;
   return Status::OK();
 }
+
+
+Status BSTIndex::Close() {
+  if (close(fd_index_) < 0) {
+    std::string msg = std::string("Count not close index file [") + filename_ + std::string("]");
+    return Status::IOError(msg, strerror(errno));
+  }
+  return Status::OK();
+}
+
+
 
 
 int BSTIndex::HashFunctionMul(const std::string& key) const {
@@ -266,16 +277,16 @@ Status BSTIndex::DeleteItem(const std::string& key) {
   entries_[index].index_entry_left = 0;
   entries_[index].index_entry_right = header_->index_free_entries_head;
   header_->index_free_entries_head = index;
-  header_->num_free_entries += 1;
+  header_->num_entries_free += 1;
 
   return Status::OK();
 }
 
 void BSTIndex::PrintHeader(char* msg) {
-  fprintf(stdout, "Header - %s - num_buckets:%llu num_entries:%llu num_free_entries:%llu index_head:%llu index_stack:%llu\n", msg,
+  fprintf(stdout, "Header - %s - num_buckets:%llu num_entries:%llu num_entries_free:%llu index_head:%llu index_stack:%llu\n", msg,
                    header_->num_buckets,
                    header_->num_entries,
-                   header_->num_free_entries,
+                   header_->num_entries_free,
                    header_->index_free_entries_head,
                    header_->index_free_entries_stack
           );//
@@ -289,17 +300,19 @@ Status BSTIndex::GetIndexFreeEntry(index_t* index_out) {
     header_->index_free_entries_head = entries_[index_entry].index_entry_right;
     //printf("BSTIndex::GetIndexFreeEntry(): getting from list\n");
   } else {
-    if (header_->index_free_entries_stack == header_->num_free_entries) {
-      //printf("BSTIndex::GetIndexFreeEntry(): try to expand index\n");
+    //if (header_->index_free_entries_stack == header_->num_entries_free) {
+    if (header_->num_entries_free == 0) {
+      printf("BSTIndex::GetIndexFreeEntry(): try to expand index\n");
       Status s = ExpandFile(); 
       if (!s.IsOK()) return s;
       //else printf("BSTIndex::GetIndexFreeEntry(): expand success\n");
     }
     
     // Check again after the file was maybe expanded
-    if (header_->index_free_entries_stack == header_->num_free_entries) {
+    //if (header_->index_free_entries_stack == header_->num_entries_free) {
+    if (header_->num_entries_free == 0) {
       index_entry = -1;
-      //printf("BSTIndex::GetIndexFreeEntry(): No entry available!\n");
+      printf("BSTIndex::GetIndexFreeEntry(): No entry available!\n");
     } else {
       index_entry = header_->index_free_entries_stack;
       header_->index_free_entries_stack += 1;
@@ -307,7 +320,7 @@ Status BSTIndex::GetIndexFreeEntry(index_t* index_out) {
     }
   }
 
-  header_->num_free_entries -= 1;
+  header_->num_entries_free -= 1;
   *index_out = index_entry;
   return Status::OK();
 }
@@ -315,7 +328,8 @@ Status BSTIndex::GetIndexFreeEntry(index_t* index_out) {
 
 
 
-Status BSTIndex::CreateFile(const std::string& filename, int num_buckets, int num_entries, int num_free_entries) {
+Status BSTIndex::CreateFile(const std::string& filename, int num_buckets, int num_entries, int num_entries_free) {
+  num_entries += 1; // we add +1 here due to the offseting done later to num_entries_free
   int page_size = getpagesize();
   char buffer[page_size];
   if ((fd_index_ = open(filename.c_str(), O_RDWR | O_CREAT, 0644)) < 0) {
@@ -328,7 +342,7 @@ Status BSTIndex::CreateFile(const std::string& filename, int num_buckets, int nu
   struct Header* header = reinterpret_cast<struct Header*>(buffer);
   header->num_buckets = num_buckets;
   header->num_entries = num_entries;
-  header->num_free_entries = num_entries - 1;
+  header->num_entries_free = num_entries - 1;
   header->index_free_entries_head = 0;
   header->index_free_entries_stack = 1;
   write(fd_index_, buffer, page_size);
@@ -425,10 +439,10 @@ Status BSTIndex::ExpandFile() {
 
   // Update file header
   header_->num_entries = num_entries_new;
-  header_->num_free_entries += num_entries_new - num_entries_current;
+  header_->num_entries_free += num_entries_new - num_entries_current;
   size_entries_ = size_entries_new;
 
-  LOG_DEBUG(classname(), "ExpandFile - num_buckets:%llu num_entries:%llu num_free_entries:%llu index_free_entries_head:%d index_free_entries_stack:%d", header_->num_buckets, header_->num_entries, header_->num_free_entries, (int)header_->index_free_entries_head, (int)header_->index_free_entries_stack);
+  LOG_DEBUG(classname(), "ExpandFile - num_buckets:%llu num_entries:%llu num_entries_free:%llu index_free_entries_head:%d index_free_entries_stack:%d", header_->num_buckets, header_->num_entries, header_->num_entries_free, (int)header_->index_free_entries_head, (int)header_->index_free_entries_stack);
 
   // Re-mmap() file
   entries_ = static_cast<struct Entry*>(mmap(0,

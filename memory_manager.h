@@ -36,10 +36,11 @@ class MemoryManager {
  public:
   MemoryManager() {}
   virtual ~MemoryManager() {}
-  virtual Status Open(const std::string& db_name,
+  virtual Status Open(const std::string& filename,
                       DataManager* data_manager,
                       kvsize_t size_data,
                       offset_t offset_init) = 0;
+  virtual Status Close() = 0;
   virtual Status AllocateMemory(kvsize_t size, offset_t* offset, kvsize_t* size_total) = 0;
   virtual Status FreeMemory(offset_t offset, uint64_t size) = 0;
   virtual int TEST_NumMemoryBlocks() const = 0;
@@ -53,17 +54,18 @@ class SimpleMemoryManager : public MemoryManager {
   virtual ~SimpleMemoryManager() {
     delete file_manager_;
   }
-  virtual Status Open(const std::string& db_name,
+  virtual Status Open(const std::string& filename,
                       DataManager* data_manager,
                       kvsize_t size_data,
                       offset_t offset_init);
+  virtual Status Close();
   virtual Status AllocateMemory(kvsize_t size, offset_t* offset, kvsize_t* size_total);
   virtual Status FreeMemory(offset_t offset, uint64_t size);
   virtual int TEST_NumMemoryBlocks() const { return freememory_map_.size(); }
   virtual Status Synchronize();
 
  private:
-  std::string db_name_;
+  std::string filename_;
   DataManager* data_manager_;
   SimpleFBFileManager* file_manager_;
 

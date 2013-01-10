@@ -37,6 +37,7 @@ class DataManager {
   DataManager() {}
   virtual ~DataManager() {}
   virtual Status Open(const std::string& filename, uint64_t size_data) = 0;
+  virtual Status Close() = 0;
   virtual Status ReadData(offset_t offset, int size, std::string* data) const = 0;
   virtual Status WriteData(offset_t offset, int size, const std::string& data) = 0;
   virtual int CompareData(offset_t offset, int size, const std::string& data) const = 0;
@@ -51,6 +52,7 @@ class FileDataManager : public DataManager {
   FileDataManager() {}
   virtual ~FileDataManager() {}
   virtual Status Open(const std::string& filename, uint64_t size_data);
+  virtual Status Close();
   virtual Status ReadData(offset_t offset, int size, std::string* data) const;
   virtual Status WriteData(offset_t offset, int size, const std::string& data);
   virtual int CompareData(offset_t offset, int size, const std::string& data) const;
@@ -59,7 +61,7 @@ class FileDataManager : public DataManager {
   virtual Status Synchronize();
 
  private:
-  std::string db_name_;
+  std::string filename_;
   int fd_data_;
 
   Status CreateFile(const std::string& filename, uint64_t size_data);

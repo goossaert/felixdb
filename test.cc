@@ -40,13 +40,18 @@ std::string concatenate(std::string const& str, int i)
 
 int main()
 {
+    felixdb::Status s;
     felixdb::Logger::set_current_level( felixdb::Logger::DEBUG );
     std::string value_out("value_out");
     //bool ret;
     printf("blah!\n");
 
     felixdb::HashMap db;
-    db.Open("file.db");
+    s = db.Open("/tmp/felixdb", 4000000, 1000000, true);
+    if (!s.IsOK()) {
+      fprintf(stderr, "%s\n", s.ToString().c_str());
+      exit(-1);
+    }
 
     /*
     db.Put("key31", "qwertyuiopasdfghjklzxcvbnm1234qwertyuiopasdfghjklzxcvbnm1234qwertyuiopasdfghjklzxcvbnm1234qwertyuiopasdfghjklzxcvbnm1234qwertyuiopasdfghjklzxcvbnm1234");
@@ -83,7 +88,6 @@ int main()
 
     int num_items = 1000000;
     int step = 100000;
-    felixdb::Status s;
 
     for (int i = 0; i < num_items; i++) {
         s = db.Put( concatenate( "key", i ), value_long );
