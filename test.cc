@@ -47,7 +47,7 @@ int main()
     printf("blah!\n");
 
     felixdb::HashMap db;
-    s = db.Open("/tmp/felixdb", 4000000, 1000000, true);
+    s = db.Open("/tmp/felixdb", 4000000, 1000000, false);
     if (!s.IsOK()) {
       fprintf(stderr, "%s\n", s.ToString().c_str());
       exit(-1);

@@ -116,6 +116,9 @@ Status SimpleFBFileManager::OpenFile(const std::string& filename) {
   if (access(filename.c_str(), F_OK) == -1) {
     Status s = CreateFile(filename);
     if (!s.IsOK()) return s;
+    printf("Free block file created\n");
+  } else {
+    printf("Free block file already exists\n");
   }
   
   if ((fd_freememory_ = open(filename.c_str(), O_RDWR)) < 0) {
@@ -125,7 +128,7 @@ Status SimpleFBFileManager::OpenFile(const std::string& filename) {
   int page_size = getpagesize();
 
   header_ = static_cast<struct FreeMemoryHeader*>(mmap(0,
-                                                       sizeof(struct FreeMemoryHeader),
+                                                       page_size,
                                                        PROT_READ | PROT_WRITE,
                                                        MAP_SHARED,
                                                        fd_freememory_,
@@ -136,6 +139,9 @@ Status SimpleFBFileManager::OpenFile(const std::string& filename) {
   if (header_ == MAP_FAILED) {
     return Status::IOError("mmap() failed for header", strerror(errno));
   }
+
+  // TODO: Move this computation somewhere else
+  size_freememory_ = (header_->size_file - page_size);
 
   freememory_ = static_cast<struct FreeMemoryBlock*>(mmap(0,
                                                           size_freememory_,
@@ -167,7 +173,8 @@ Status SimpleFBFileManager::OpenFile(const std::string& filename) {
 
 
 Status SimpleFBFileManager::CloseFile() {
-  munmap(header_, sizeof(struct FreeMemoryHeader));
+  int page_size = getpagesize();
+  munmap(header_, page_size);
   munmap(freememory_, size_freememory_);
   close(fd_freememory_);
   return Status::OK();
@@ -222,7 +229,8 @@ Status SimpleFBFileManager::UpdateBlock(offset_t off, offset_t off_new, uint64_t
 
 
 Status SimpleFBFileManager::Synchronize() {
-  if (msync(header_, sizeof(struct FreeMemoryHeader), MS_SYNC) != 0) {
+  int page_size = getpagesize();
+  if (msync(header_, page_size, MS_SYNC) != 0) {
     return Status::IOError("Could not synchronize header in FreeBlock file manager", strerror(errno));
   }
 

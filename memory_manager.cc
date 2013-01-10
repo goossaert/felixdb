@@ -140,10 +140,6 @@ Status SimpleMemoryManager::AllocateMemory(kvsize_t size,
 
 
 Status SimpleMemoryManager::FreeMemory(offset_t offset_in, uint64_t size_in) {
-  //
-  // THIS FUNCTION HAS NOT BEEN TESTED THROUGHFULLY
-  //
-  
   Status s;
 
   offset_t offset, offset_prec, offset_succ;
