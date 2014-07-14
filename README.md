@@ -1,4 +1,4 @@
 felixdb
 =======
 
-On-disk persistent hash table in C++ using memory-mapped files, for fast access to key-based data
+This projet has been restarted. It was renamed and moved to a new repository. Check out [KingDB](https://github.com/goossaert/kingdb)
